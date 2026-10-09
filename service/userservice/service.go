@@ -17,6 +17,6 @@ type Service struct {
 	repo    Repository
 }
 
-func New(repo Repository, signKey *rsa.PrivateKey) Service {
+func New(signKey *rsa.PrivateKey, repo Repository) Service {
 	return Service{repo: repo, signKey: signKey}
 }

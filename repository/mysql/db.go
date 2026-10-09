@@ -2,18 +2,28 @@ package mysql
 
 import (
 	"database/sql"
+	"fmt"
 )
 
-type MysqlDB struct {
-	db *sql.DB
+type Config struct {
+	Host     string
+	Port     int
+	Username string
+	Password string
+	DBName   string
 }
 
-func New() (*MysqlDB, error) {
-	dsn := "user:5678docker@tcp(127.0.0.1:3308)/quizofkingzdb"
+type MysqlDB struct {
+	config Config
+	db     *sql.DB
+}
+
+func New(config Config) (*MysqlDB, error) {
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", config.Username, config.Password, config.Host, config.Port, config.DBName)
 
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return nil, err
+		panic(fmt.Errorf("cant't open db connection: %v", err))
 	}
 
 	if err := db.Ping(); err != nil {
@@ -21,5 +31,5 @@ func New() (*MysqlDB, error) {
 		return nil, err
 	}
 
-	return &MysqlDB{db: db}, nil
+	return &MysqlDB{config: config, db: db}, nil
 }

@@ -2,42 +2,62 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"net/http"
-	"quizofkingz/entity"
-	"quizofkingz/handlers"
+	"quizofkingz/config"
+	"quizofkingz/delivery/httpserver"
+	"quizofkingz/pkg/auth"
 	"quizofkingz/repository/mysql"
+	"quizofkingz/service/authservice"
+	"quizofkingz/service/userservice"
+	"time"
+)
+
+const (
+	JwtSignKey                     = "sign"
+	AccessTokenSubject             = "at"
+	RefreshTokenSubject            = "rt"
+	AccessTokenExpirationDuration  = time.Hour * 24
+	RefreshTokenExpirationDuration = time.Hour * 24 * 7
 )
 
 func main() {
-	http.HandleFunc("/users/register", handlers.UserRegisterHandler)
-	http.HandleFunc("/users/login", handlers.UserLoginHandler)
-	http.HandleFunc("/users/profile", handlers.GetProfile)
+	cnf := config.Config{
+		HTTPServer: config.HTTPServer{Port: 8080},
+		Auth: authservice.Config{
+			SignKey:                   JwtSignKey,
+			AccessSubject:             AccessTokenSubject,
+			RefreshSubject:            RefreshTokenSubject,
+			AccessExpirationDuration:  AccessTokenExpirationDuration,
+			RefreshExpirationDuration: RefreshTokenExpirationDuration,
+		},
+		Mysql: mysql.Config{
+			Host:     "localhost",
+			Port:     3308,
+			Username: "user",
+			Password: "5678docker",
+			DBName:   "quizofkingzdb",
+		}}
 
-	http.ListenAndServe(":8080", nil)
+	authSvc, userSvc := setupServices(cnf)
 
-	fmt.Printf("Server started at port 8080\n")
+	server := httpserver.New(cnf, authSvc, userSvc)
+
+	server.Serve()
 }
 
-func testUserMysqlRepo() {
-	mysqlRepo, err := mysql.New()
+func setupServices(cfg config.Config) (authservice.Service, userservice.Service) {
+	authSvc := authservice.New(cfg.Auth)
+
+	MysqlRepo, err := mysql.New(cfg.Mysql)
 	if err != nil {
-		log.Fatal(err)
+		panic(fmt.Errorf("mysql init err: %v", err))
 	}
 
-	createdUser, err := mysqlRepo.RegisterUser(entity.User{PhoneNumber: "09197321182", Name: "Alireza", Password: "1234"})
-
+	privateKey, err := auth.LoadPrivateKey()
 	if err != nil {
-		fmt.Println("register user", err)
-	} else {
-		fmt.Println("created user", createdUser)
+		return authservice.Service{}, userservice.Service{}
 	}
 
-	isUnique, err := mysqlRepo.IsPhoneNumberUnique(createdUser.PhoneNumber)
+	userSvc := userservice.New(privateKey, MysqlRepo)
 
-	if err != nil {
-		fmt.Println("unique err", err)
-	}
-
-	fmt.Println("isUnique", isUnique)
+	return authSvc, userSvc
 }

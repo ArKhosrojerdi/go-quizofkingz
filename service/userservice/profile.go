@@ -33,22 +33,41 @@ type CustomerInfo struct {
 
 type Claims struct {
 	jwt.RegisteredClaims
-	UserID uint
+	UserID    uint
+	TokenType string
 }
 
 func (c Claims) Valid() error {
 	return nil
 }
 
-func createToken(userID uint, signKey *rsa.PrivateKey) (string, error) {
-	t := jwt.New(jwt.SigningMethodRS256)
+const (
+	AccessTokenType  = "access"
+	RefreshTokenType = "refresh"
+)
 
-	t.Claims = &Claims{
-		// set the expire time
-		// see https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.4
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)),
-		UserID:    userID,
+func (s Service) CreateTokenPair(userID uint) (LoginResponse, error) {
+	accessToken, err := createToken(userID, s.signKey, AccessTokenType, 2*time.Hour)
+	if err != nil {
+		return LoginResponse{}, err
 	}
+
+	refreshToken, err := createToken(userID, s.signKey, RefreshTokenType, 30*24*time.Hour)
+	if err != nil {
+		return LoginResponse{}, err
+	}
+
+	return LoginResponse{AccessToken: accessToken, RefreshToken: refreshToken}, nil
+}
+
+func createToken(userID uint, signKey *rsa.PrivateKey, tokenType string, ttl time.Duration) (string, error) {
+	t := jwt.NewWithClaims(jwt.SigningMethodRS256, &Claims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),
+		},
+		UserID:    userID,
+		TokenType: tokenType,
+	})
 
 	return t.SignedString(signKey)
 }

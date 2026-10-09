@@ -12,7 +12,8 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	AccessToken string `json:"access_token"`
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 func (s Service) Login(req LoginRequest) (LoginResponse, error) {
@@ -30,10 +31,10 @@ func (s Service) Login(req LoginRequest) (LoginResponse, error) {
 		return LoginResponse{}, fmt.Errorf("phone number or password not correct")
 	}
 
-	token, err := createToken(user.ID, s.signKey)
+	tokens, err := s.CreateTokenPair(user.ID)
 	if err != nil {
 		return LoginResponse{}, fmt.Errorf("create token: %w", err)
 	}
 
-	return LoginResponse{AccessToken: token}, nil
+	return tokens, nil
 }
