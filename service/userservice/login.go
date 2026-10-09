@@ -2,7 +2,6 @@ package userservice
 
 import (
 	"fmt"
-	"quizofkingz/entity"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -13,7 +12,7 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	User entity.User `json:"user"`
+	AccessToken string `json:"access_token"`
 }
 
 func (s Service) Login(req LoginRequest) (LoginResponse, error) {
@@ -31,5 +30,10 @@ func (s Service) Login(req LoginRequest) (LoginResponse, error) {
 		return LoginResponse{}, fmt.Errorf("phone number or password not correct")
 	}
 
-	return LoginResponse{}, nil
+	token, err := createToken(user.ID, s.signKey)
+	if err != nil {
+		return LoginResponse{}, fmt.Errorf("create token: %w", err)
+	}
+
+	return LoginResponse{AccessToken: token}, nil
 }

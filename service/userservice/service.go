@@ -1,6 +1,7 @@
 package userservice
 
 import (
+	"crypto/rsa"
 	"quizofkingz/entity"
 )
 
@@ -12,9 +13,10 @@ type Repository interface {
 }
 
 type Service struct {
-	repo Repository
+	signKey *rsa.PrivateKey
+	repo    Repository
 }
 
-func New(repo Repository) Service {
-	return Service{repo: repo}
+func New(repo Repository, signKey *rsa.PrivateKey) Service {
+	return Service{repo: repo, signKey: signKey}
 }

@@ -34,7 +34,7 @@ func UserRegisterHandler(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	userSvc := userservice.New(mysqlRepo)
+	userSvc := userservice.New(mysqlRepo, nil)
 	_, err = userSvc.Register(uReq)
 	if err != nil {
 		writer.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, err.Error())))
