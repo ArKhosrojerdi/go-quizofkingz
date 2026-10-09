@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
+	"quizofkingz/pkg/auth"
 	"quizofkingz/repository/mysql"
 	"quizofkingz/service/userservice"
-
-	"github.com/golang-jwt/jwt/v5"
 )
 
 func UserLoginHandler(writer http.ResponseWriter, req *http.Request) {
@@ -37,21 +35,9 @@ func UserLoginHandler(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	keyPath := os.Getenv("JWT_PRIVATE_KEY_PATH")
-	if keyPath == "" {
-		writeLoginError(writer, http.StatusInternalServerError, "JWT_PRIVATE_KEY_PATH is not set")
-		return
-	}
-
-	keyPEM, err := os.ReadFile(keyPath)
+	privateKey, err := auth.LoadPrivateKey()
 	if err != nil {
-		writeLoginError(writer, http.StatusInternalServerError, fmt.Sprintf("read JWT private key: %s", err))
-		return
-	}
-
-	privateKey, err := jwt.ParseRSAPrivateKeyFromPEM(keyPEM)
-	if err != nil {
-		writeLoginError(writer, http.StatusInternalServerError, fmt.Sprintf("parse JWT private key: %s", err))
+		writeLoginError(writer, http.StatusInternalServerError, err.Error())
 		return
 	}
 

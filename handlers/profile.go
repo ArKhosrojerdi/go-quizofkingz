@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"quizofkingz/pkg/auth"
 	"quizofkingz/repository/mysql"
@@ -12,25 +11,17 @@ import (
 
 func GetProfile(writer http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
+		writer.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Fprint(writer, "Method not allowed")
+		return
 	}
 
 	authen := req.Header.Get("Authorization")
 	claims, err := auth.ParseJWT(authen)
 	if err != nil {
-		fmt.Fprint(writer, http.StatusUnauthorized, `{"error": "token is not valid"}`)
-	}
-
-	data, err := io.ReadAll(req.Body)
-	if err != nil {
-		writer.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, err.Error())))
-		return
-	}
-
-	var pReq userservice.ProfileRequest
-	err = json.Unmarshal(data, &pReq)
-	if err != nil {
-		writer.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, err.Error())))
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusUnauthorized)
+		fmt.Fprint(writer, `{"error": "token is not valid"}`)
 		return
 	}
 
@@ -50,7 +41,7 @@ func GetProfile(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	data, err = json.Marshal(resp)
+	data, err := json.Marshal(resp)
 	if err != nil {
 		writer.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, err.Error())))
 		return
