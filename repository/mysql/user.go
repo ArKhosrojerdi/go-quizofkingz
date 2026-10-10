@@ -2,8 +2,10 @@ package mysql
 
 import (
 	"database/sql"
-	"fmt"
+	"errors"
 	"quizofkingz/entity"
+	"quizofkingz/pkg/errmsg"
+	"quizofkingz/pkg/richerror"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -14,11 +16,14 @@ func (d *MysqlDB) IsPhoneNumberUnique(phoneNumber string) (bool, error) {
 	_, err := scanUser(row)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return true, nil
 		}
 
-		return false, fmt.Errorf("mysql query error: %w", err)
+		return false, richerror.New("mysql.IsPhoneNumberUnique").
+			WithErr(err).
+			WithMessage(errmsg.ErrorMsgMysqlQuery).
+			WithKind(richerror.KindUnexpected)
 	}
 
 	return false, nil
@@ -28,13 +33,19 @@ func (d *MysqlDB) RegisterUser(user entity.User) (entity.User, error) {
 	res, err := d.db.Exec(`INSERT INTO users(name, phone_number, password) VALUES(?, ?, ?)`, user.Name, user.PhoneNumber, user.Password)
 
 	if err != nil {
-		return entity.User{}, fmt.Errorf("can't execute command: %w", err)
+		return entity.User{}, richerror.New("mysql.RegisterUser").
+			WithErr(err).
+			WithMessage(errmsg.ErrorMsgCantExecuteCommand).
+			WithKind(richerror.KindUnexpected)
 	}
 
 	id, err := res.LastInsertId()
 
 	if err != nil {
-		return entity.User{}, fmt.Errorf("can't get inserted user ID: %w", err)
+		return entity.User{}, richerror.New("mysql.RegisterUser").
+			WithErr(err).
+			WithMessage(errmsg.ErrorMsgCantGetInsertedID).
+			WithKind(richerror.KindUnexpected)
 	}
 
 	user = entity.User{
@@ -52,11 +63,14 @@ func (d *MysqlDB) GetUserByPhoneNumber(phoneNumber string) (entity.User, bool, e
 	user, err := scanUser(row)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return entity.User{}, false, nil
 		}
 
-		return entity.User{}, false, fmt.Errorf("mysql query error: %w", err)
+		return entity.User{}, false, richerror.New("mysql.GetUserByPhoneNumber").
+			WithErr(err).
+			WithMessage(errmsg.ErrorMsgMysqlQuery).
+			WithKind(richerror.KindUnexpected)
 	}
 
 	return user, true, nil
@@ -68,11 +82,17 @@ func (d *MysqlDB) GetUserByID(userID uint) (entity.User, error) {
 	user, err := scanUser(row)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return entity.User{}, fmt.Errorf("record not found")
+		if errors.Is(err, sql.ErrNoRows) {
+			return entity.User{}, richerror.New("mysql.GetUserByID").
+				WithErr(err).
+				WithMessage(errmsg.ErrorMsgNotFound).
+				WithKind(richerror.KindNotFound)
 		}
 
-		return entity.User{}, fmt.Errorf("can't scan query results: %w", err)
+		return entity.User{}, richerror.New("mysql.GetUserByID").
+			WithErr(err).
+			WithMessage(errmsg.ErrorMsgCantScanQueryResult).
+			WithKind(richerror.KindUnexpected)
 	}
 
 	return user, nil

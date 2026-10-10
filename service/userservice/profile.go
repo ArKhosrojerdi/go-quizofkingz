@@ -2,8 +2,9 @@ package userservice
 
 import (
 	"crypto/rsa"
-	"fmt"
 	"quizofkingz/entity"
+	"quizofkingz/pkg/errmsg"
+	"quizofkingz/pkg/richerror"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -18,9 +19,14 @@ type ProfileResponse struct {
 }
 
 func (s Service) Profile(req ProfileRequest) (ProfileResponse, error) {
+	const op richerror.Op = "userservice.Profile"
+
 	user, err := s.repo.GetUserByID(req.UserID)
 	if err != nil {
-		return ProfileResponse{}, fmt.Errorf("unexpected error: %w", err)
+		return ProfileResponse{}, richerror.New(op).
+			WithErr(err).
+			WithKind(richerror.KindOf(err)).
+			WithMessage(richerror.MessageOf(err))
 	}
 
 	return ProfileResponse{User: user}, nil
@@ -47,14 +53,22 @@ const (
 )
 
 func (s Service) CreateTokenPair(userID uint) (LoginResponse, error) {
+	const op richerror.Op = "userservice.CreateTokenPair"
+
 	accessToken, err := createToken(userID, s.signKey, AccessTokenType, 2*time.Hour)
 	if err != nil {
-		return LoginResponse{}, err
+		return LoginResponse{}, richerror.New(op).
+			WithErr(err).
+			WithMessage(errmsg.ErrorMsgUnexpected).
+			WithKind(richerror.KindUnexpected)
 	}
 
 	refreshToken, err := createToken(userID, s.signKey, RefreshTokenType, 30*24*time.Hour)
 	if err != nil {
-		return LoginResponse{}, err
+		return LoginResponse{}, richerror.New(op).
+			WithErr(err).
+			WithMessage(errmsg.ErrorMsgUnexpected).
+			WithKind(richerror.KindUnexpected)
 	}
 
 	return LoginResponse{AccessToken: accessToken, RefreshToken: refreshToken}, nil

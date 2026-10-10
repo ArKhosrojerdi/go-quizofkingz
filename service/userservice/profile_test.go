@@ -48,7 +48,7 @@ func TestCreateTokenPairUsesExpectedLifetimes(t *testing.T) {
 	}
 
 	before := time.Now()
-	tokens, err := New(nil, privateKey).CreateTokenPair(42)
+	tokens, err := New(privateKey, nil).CreateTokenPair(42)
 	if err != nil {
 		t.Fatal(err)
 	}

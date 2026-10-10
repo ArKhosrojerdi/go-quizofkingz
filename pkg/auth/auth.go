@@ -4,6 +4,8 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"os"
+	"quizofkingz/pkg/errmsg"
+	"quizofkingz/pkg/richerror"
 	"quizofkingz/service/userservice"
 	"strings"
 
@@ -29,14 +31,21 @@ func LoadPrivateKey() (*rsa.PrivateKey, error) {
 }
 
 func ParseJWT(tokenStr string) (*userservice.Claims, error) {
+	const op richerror.Op = "auth.ParseJWT"
+
 	tokenStr = strings.TrimSpace(strings.TrimPrefix(tokenStr, "Bearer "))
 	if tokenStr == "" {
-		return nil, fmt.Errorf("authorization token is empty")
+		return nil, richerror.New(op).
+			WithMessage(errmsg.ErrorMsgTokenNotValid).
+			WithKind(richerror.KindUnauthorized)
 	}
 
 	privateKey, err := LoadPrivateKey()
 	if err != nil {
-		return nil, err
+		return nil, richerror.New(op).
+			WithErr(err).
+			WithMessage(errmsg.ErrorMsgUnexpected).
+			WithKind(richerror.KindUnexpected)
 	}
 
 	claims := &userservice.Claims{}
@@ -46,11 +55,11 @@ func ParseJWT(tokenStr string) (*userservice.Claims, error) {
 		}
 		return &privateKey.PublicKey, nil
 	})
-	if err != nil {
-		return nil, err
-	}
-	if !token.Valid {
-		return nil, fmt.Errorf("token is invalid")
+	if err != nil || !token.Valid {
+		return nil, richerror.New(op).
+			WithErr(err).
+			WithMessage(errmsg.ErrorMsgTokenNotValid).
+			WithKind(richerror.KindUnauthorized)
 	}
 	return claims, nil
 }
