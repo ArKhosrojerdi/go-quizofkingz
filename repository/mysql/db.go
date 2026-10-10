@@ -20,7 +20,6 @@ type MysqlDB struct {
 
 func New(config Config) (*MysqlDB, error) {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", config.Username, config.Password, config.Host, config.Port, config.DBName)
-
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		panic(fmt.Errorf("cant't open db connection: %v", err))

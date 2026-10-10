@@ -5,6 +5,7 @@ import (
 	"quizofkingz/config"
 	"quizofkingz/delivery/httpserver"
 	"quizofkingz/pkg/auth"
+	"quizofkingz/repository/migrator"
 	"quizofkingz/repository/mysql"
 	"quizofkingz/service/authservice"
 	"quizofkingz/service/userservice"
@@ -39,6 +40,9 @@ func main() {
 
 	authSvc, userSvc := setupServices(cnf)
 
+	mgtr := migrator.New(cnf.Mysql)
+	mgtr.Up()
+	
 	server := httpserver.New(cnf, authSvc, userSvc)
 
 	server.Serve()

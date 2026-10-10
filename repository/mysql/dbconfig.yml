@@ -1,0 +1,5 @@
+production:
+  dialect: mysql
+  datasource: user:5678docker@(localhost:3308)/quizofkingzdb?parseTime=true
+  dir: migrations
+  table: migrations

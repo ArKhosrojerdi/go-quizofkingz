@@ -32,10 +32,12 @@ func (s Server) Serve() {
 
 	// Routes
 	e.GET("/health-check", s.healthCheck)
-	e.POST("/users/register", s.Register)
-	e.POST("/users/login", s.Login)
-	e.POST("/users/refresh", s.Refresh)
-	e.GET("/users/profile", s.Profile)
+
+	userG := e.Group("/users")
+	userG.POST("/register", s.Register)
+	userG.POST("/login", s.Login)
+	userG.POST("/refresh", s.Refresh)
+	userG.GET("/profile", s.Profile)
 
 	err := e.Start(fmt.Sprintf(":%d", s.config.HTTPServer.Port))
 	if err != nil {
