@@ -1,13 +1,32 @@
 package httpserver
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"quizofkingz/pkg/errmsg"
 	"quizofkingz/pkg/richerror"
 
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/labstack/echo/v5"
 )
+
+type fieldErrorResponse struct {
+	Error   validation.Errors `json:"error"`
+	Message string            `json:"message"`
+}
+
+func writeServiceError(c *echo.Context, err error) error {
+	var fields validation.Errors
+	if errors.As(err, &fields) {
+		return c.JSON(http.StatusBadRequest, fieldErrorResponse{
+			Error:   fields,
+			Message: errmsg.ErrorMsgInvalidFields,
+		})
+	}
+
+	return toHTTPError(err)
+}
 
 func toHTTPError(err error) *echo.HTTPError {
 	kind := richerror.KindOf(err)

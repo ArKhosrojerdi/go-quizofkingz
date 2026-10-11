@@ -3,6 +3,7 @@ module quizofkingz
 go 1.27
 
 require (
+	github.com/go-ozzo/ozzo-validation/v4 v4.4.1
 	github.com/go-sql-driver/mysql v1.10.1
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/labstack/echo/v5 v5.4.0

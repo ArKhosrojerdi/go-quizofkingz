@@ -39,7 +39,7 @@ func (s Server) Register(c *echo.Context) error {
 
 	resp, err := s.userSvc.Register(req)
 	if err != nil {
-		return toHTTPError(err)
+		return writeServiceError(c, err)
 	}
 
 	return c.JSON(http.StatusCreated, resp)
